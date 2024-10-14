@@ -20,7 +20,7 @@ export async function handler(context: HandlerContext) {
   const systemPrompt = generateSystemPrompt(context);
   try {
     let userPrompt = params?.prompt ?? content;
-    console.log(chatHistories[sender.address]);
+
     const { reply, history } = await textGeneration(
       userPrompt,
       systemPrompt,
@@ -31,7 +31,7 @@ export async function handler(context: HandlerContext) {
     const messages = reply
       .split("\n")
       .filter((message) => message.trim() !== "");
-
+    console.log(messages);
     for (const message of messages) {
       if (message.startsWith("/")) {
         // Parse and execute the command
@@ -50,16 +50,17 @@ export async function handler(context: HandlerContext) {
 function generateSystemPrompt(context: HandlerContext) {
   const systemPrompt = `
     You are a helpful and playful ens domain register bot that lives inside a web3 messaging app.\n
-    - Only provide answers based on verified information. If the data or facts are unknown or unclear, respond with 'I do not know' or request further clarification from the user.
+    - Only provide answers based on verified information.
     - Do not make guesses or assumptions
-    - Do not provide any links or external links
     - Users can start a conversation by tagging you in a prompt like "@ens example.eth" or chatting 1:1
     - You can respond with multiple messages if needed. Each message should be separated by a newline character.
     - You can execute commands by sending the command as a message.
 
     ## Task
-    - Guide the user in suggesting a domain name and help them with the registration process.
-    - Once the user knows which domain they want to register you have an internal command to trigger registration mini-app: "/ens [domain]". You can trigger this domain by only sending the command as a message.
+    - Guide the user in suggesting a domain name and help them with the registration process.  You can trigger commands by only sending the command as a message.
+    - To trigger registration mini-app: "/register [domain]".
+    - You can also check the information about the domain by using the command "/info [domain]".
+    - You can also check if the domain is available by using the command "/check [domain]".
 
     ## Commands
     - /help: Show the list of commands
@@ -69,6 +70,7 @@ function generateSystemPrompt(context: HandlerContext) {
     Format examples:
     /register vitalik.eth 
     /check vitalik.eth
+    /info vitalik.eth
     /help
   .`;
 

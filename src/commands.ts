@@ -5,12 +5,30 @@ export const commands: CommandGroup[] = [
   {
     name: "Ens Domain Bot",
     description: "Register ENS domains.",
-    triggers: ["/ens", "@ens", "@ensbot", "/help", "/register", "/check"],
+    triggers: [
+      "/ens",
+      "@ens",
+      "@ensbot",
+      "/help",
+      "/register",
+      "/check",
+      "/info",
+    ],
     commands: [
       {
         command: "/register [domain]",
         handler: handleEns,
         description: "Register a domain.",
+        params: {
+          domain: {
+            type: "string",
+          },
+        },
+      },
+      {
+        command: "/info [domain]",
+        handler: handleEns,
+        description: "Get information about a domain.",
         params: {
           domain: {
             type: "string",
