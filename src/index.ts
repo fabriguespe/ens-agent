@@ -1,7 +1,5 @@
 import { run, HandlerContext } from "@xmtp/message-kit";
-import { handler as agent } from "./handler/agent.js";
-import { handleEns } from "./handler/ens.js";
-import { group } from "console";
+import { handleEns, ensAgent } from "./handler/ens.js";
 
 run(async (context: HandlerContext) => {
   const {
