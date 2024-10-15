@@ -20,6 +20,6 @@ run(
     await ensAgent(context);
   },
   {
-    logging: "debug",
+    logging: process.env.NODE_ENV === "production" ? "debug" : "off",
   }
 );

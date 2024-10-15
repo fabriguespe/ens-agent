@@ -67,7 +67,7 @@ export async function handleEns(context: HandlerContext) {
       }
     }
 
-    return message;
+    return { code: 200, message };
     // context.send(message);
   } else if (command == "check") {
     const { domain } = params;
@@ -126,8 +126,7 @@ export async function ensAgent(context: HandlerContext) {
       if (message.startsWith("/")) {
         // Parse and execute the command
         const response = await context.intent(message);
-        console.log(response);
-        await context.send((response as ApiResponse).message);
+        await context.send((response as ApiResponse)?.message);
       } else {
         // Send the message as a text response
         await context.send(message);
