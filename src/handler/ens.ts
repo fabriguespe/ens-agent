@@ -1,4 +1,5 @@
-import { HandlerContext, User } from "@xmtp/message-kit";
+import { HandlerContext, ApiResponse } from "@xmtp/message-kit";
+
 import { textGeneration } from "../lib/openai.js";
 const chatHistories: Record<string, any[]> = {};
 
@@ -26,7 +27,6 @@ export async function handleEns(context: HandlerContext) {
       content: { command, params },
     },
   } = context;
-  console.log(command, params);
   const baseUrl = "https://ens.steer.fun/";
   if (command == "register") {
     // Destructure and validate parameters for the ens command
@@ -67,7 +67,8 @@ export async function handleEns(context: HandlerContext) {
       }
     }
 
-    context.send(message);
+    return message;
+    // context.send(message);
   } else if (command == "check") {
     const { domain } = params;
 
@@ -80,13 +81,15 @@ export async function handleEns(context: HandlerContext) {
 
     //@ts-ignore
     if (data.status == 404) {
-      context.send(
-        `Looks like ${domain} is available! Do you want to register it? https://ens.steer.fun/frames/manage?name=${domain}`
-      );
+      return {
+        code: 200,
+        message: `Looks like ${domain} is available! Do you want to register it? https://ens.steer.fun/frames/manage?name=${domain}`,
+      };
     } else {
-      context.send(
-        `Looks like ${domain} is already registered! Let's try another one`
-      );
+      return {
+        code: 404,
+        message: `Looks like ${domain} is already registered! Let's try another one`,
+      };
     }
   }
 }
@@ -122,7 +125,9 @@ export async function ensAgent(context: HandlerContext) {
     for (const message of messages) {
       if (message.startsWith("/")) {
         // Parse and execute the command
-        await context.intent(message);
+        const response = await context.intent(message);
+        console.log(response);
+        await context.send((response as ApiResponse).message);
       } else {
         // Send the message as a text response
         await context.send(message);

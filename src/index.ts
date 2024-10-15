@@ -16,5 +16,5 @@ run(async (context: HandlerContext) => {
     await handleEns(context);
     return;
   }
-  await agent(context);
+  await ensAgent(context);
 });
