@@ -27,8 +27,9 @@ export async function handleEns(context: HandlerContext) {
       content: { command, params },
     },
   } = context;
-  const baseUrl = "https://ens.steer.fun/";
-  if (command == "register") {
+  const frameUrl = "https://ens.steer.fun/";
+  const baseUrl = "https://app.ens.domains/";
+  if (command == "renew") {
     // Destructure and validate parameters for the ens command
     const { domain } = params;
 
@@ -37,11 +38,22 @@ export async function handleEns(context: HandlerContext) {
       return;
     }
     // Generate URL for the ens
-    let url_ens = baseUrl + "frames/manage?name=" + domain;
+    let url_ens = frameUrl + "frames/manage?name=" + domain;
+    context.send(`${url_ens}`);
+  } else if (command == "register") {
+    // Destructure and validate parameters for the ens command
+    const { domain } = params;
+
+    if (!domain) {
+      context.reply("Missing required parameters. Please provide domain.");
+      return;
+    }
+    // Generate URL for the ens
+    let url_ens = baseUrl + domain + "/register";
     context.send(`${url_ens}`);
   } else if (command == "help") {
     context.send(
-      "Here is the list of commands:\n/register [domain]: Register a domain.\n/info [domain]: Get information about a domain.\n/check [domain]: Check if a domain is available.\n/help: Show the list of commands"
+      "Here is the list of commands:\n/register [domain]: Register a domain.\n/renew [domain]: Renew a domain.\n/info [domain]: Get information about a domain.\n/check [domain]: Check if a domain is available.\n/help: Show the list of commands"
     );
   } else if (command == "info") {
     const { domain } = params;
@@ -57,7 +69,7 @@ export async function handleEns(context: HandlerContext) {
       GitHub: data?.github,
       "Resolver address": data?.resolverAddress,
       Twitter: data?.twitter,
-      URL: `https://app.ens.domains/${domain}`,
+      URL: `${baseUrl}${domain}`,
     };
 
     let message = "Domain information:\n\n";
@@ -83,7 +95,7 @@ export async function handleEns(context: HandlerContext) {
     if (data.status == 404) {
       return {
         code: 200,
-        message: `Looks like ${domain} is available! Do you want to register it? https://ens.steer.fun/frames/manage?name=${domain}`,
+        message: `Looks like ${domain} is available! Do you want to register it? ${baseUrl}${domain}`,
       };
     } else {
       return {
@@ -105,6 +117,7 @@ export async function ensAgent(context: HandlerContext) {
       content: { content, params },
       sender,
     },
+    group,
   } = context;
 
   const systemPrompt = generateSystemPrompt(context);
@@ -116,12 +129,12 @@ export async function ensAgent(context: HandlerContext) {
       systemPrompt,
       chatHistories[sender.address]
     );
-    chatHistories[sender.address] = history; // Update chat history for the user
+    if (!group) chatHistories[sender.address] = history; // Update chat history for the user
 
     const messages = reply
       .split("\n")
       .filter((message) => message.trim() !== "");
-
+    console.log(messages);
     for (const message of messages) {
       if (message.startsWith("/")) {
         // Parse and execute the command
@@ -141,15 +154,16 @@ export async function ensAgent(context: HandlerContext) {
 function generateSystemPrompt(context: HandlerContext) {
   const systemPrompt = `
     You are a helpful and playful ens domain register bot that lives inside a web3 messaging app.\n
+    - You can respond with multiple messages if needed. Each message should be separated by a newline character.
+    - You can trigger commands by only sending the command in a newline message.
     - Only provide answers based on verified information.
     - Do not make guesses or assumptions
+    - Users address is: {ADDRESS}
     - Users can start a conversation by tagging you in a prompt like "@ens example.eth" or chatting 1:1
-    - You can respond with multiple messages if needed. Each message should be separated by a newline character.
-    - You can execute commands by sending the command as a message.
 
     ## Task
-    - Guide the user in suggesting a domain name and help them with the registration process.  You can trigger commands by only sending the command as a message.
-    - To trigger registration mini-app: "/register [domain]".
+    Start by telling the user whats possible. Guide the user in suggesting a domain name and help them with the registration process.  
+    - To trigger renewal: "/renew [domain]".
     - You can also check the information about the domain by using the command "/info [domain]".
     - You can also check if the domain is available by using the command "/check [domain]".
 
@@ -157,10 +171,12 @@ function generateSystemPrompt(context: HandlerContext) {
     - /help: Show the list of commands
     - /check [domain]: Check if a domain is available
     - /register [domain]: Register a domain
+    - /renew [domain]: Renew a domain
 
     Format examples:
     /register vitalik.eth 
     /check vitalik.eth
+    /renew vitalik.eth
     /info vitalik.eth
     /help
   .`;

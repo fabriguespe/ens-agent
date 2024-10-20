@@ -13,6 +13,7 @@ export const commands: CommandGroup[] = [
       "/register",
       "/check",
       "/info",
+      "/renew",
     ],
     commands: [
       {
@@ -29,6 +30,16 @@ export const commands: CommandGroup[] = [
         command: "/info [domain]",
         handler: handleEns,
         description: "Get information about a domain.",
+        params: {
+          domain: {
+            type: "string",
+          },
+        },
+      },
+      {
+        command: "/renew [domain]",
+        handler: handleEns,
+        description: "Renew a domain.",
         params: {
           domain: {
             type: "string",
