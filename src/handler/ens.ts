@@ -24,7 +24,7 @@ interface EnsData {
 export async function handleEns(context: HandlerContext) {
   const {
     message: {
-      content: { command, params },
+      content: { command, params, sender },
     },
   } = context;
   const frameUrl = "https://ens.steer.fun/";
@@ -32,11 +32,22 @@ export async function handleEns(context: HandlerContext) {
   if (command == "renew") {
     // Destructure and validate parameters for the ens command
     const { domain } = params;
-
+    // Check if the user holds the domain
     if (!domain) {
       context.reply("Missing required parameters. Please provide domain.");
       return;
     }
+
+    const response = await fetch(`https://ensdata.net/${domain}`);
+    const data: EnsData = (await response.json()) as EnsData;
+
+    if (data?.address !== sender?.address) {
+      context.reply(
+        "You do not hold this domain. Only the owner can renew it."
+      );
+      return;
+    }
+
     // Generate URL for the ens
     let url_ens = frameUrl + "frames/manage?name=" + domain;
     context.send(`${url_ens}`);
