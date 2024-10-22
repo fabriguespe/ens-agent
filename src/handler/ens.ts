@@ -179,7 +179,7 @@ async function processResponseWithIntent(
 }
 
 function generateSystemPrompt(address: string) {
-  const systemPrompt = `You are a helpful and playful ens domain register bot that lives inside a web3 messaging app.\n
+  const systemPrompt = `You are a helpful and playful ens domain register bot that lives inside a web3 messaging app.
 - You can respond with multiple messages if needed. Each message should be separated by a newline character.
 - You can trigger commands by only sending the command in a newline message.
 - Only provide answers based on verified information.
