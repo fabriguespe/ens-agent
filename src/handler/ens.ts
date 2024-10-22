@@ -2,7 +2,7 @@ import { HandlerContext } from "@xmtp/message-kit";
 
 import { textGeneration } from "../lib/openai.js";
 import { responseParser } from "../lib/openai.js";
-const chatHistories: Record<string, any[]> = {};
+let chatHistories: Record<string, any[]> = {};
 
 interface EnsData {
   address?: string;
@@ -132,19 +132,17 @@ export async function ensAgent(context: HandlerContext) {
     group,
   } = context;
 
-  const systemPrompt = generateSystemPrompt(sender.address);
   try {
     let userPrompt = params?.prompt ?? content;
 
     const { reply, history } = await textGeneration(
       userPrompt,
-      systemPrompt,
+      generateSystemPrompt(sender.address),
       chatHistories[sender.address]
     );
     if (!group) chatHistories[sender.address] = history; // Update chat history for the user
 
     await processResponseWithIntent(reply, context, sender.address);
-    return;
   } catch (error) {
     console.error("Error during OpenAI call:", error);
     await context.send("An error occurred while processing your request.");
@@ -213,4 +211,8 @@ Examples:
 - /help`;
 
   return systemPrompt;
+}
+
+export async function clearChatHistory() {
+  chatHistories = {};
 }
