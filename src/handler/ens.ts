@@ -194,7 +194,6 @@ Start by telling the user whats possible. Guide the user in suggesting a domain 
 - You can also check if the domain is available by using the command "/check [domain]".
 - to register a domain use the command "/register [domain]".
 - to get help use the command "/help".
-- To renew a domain use the command "/renew [domain]".
 
 Commands:
 - /help: Show the list of commands
