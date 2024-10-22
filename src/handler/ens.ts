@@ -1,6 +1,7 @@
-import { HandlerContext, ApiResponse } from "@xmtp/message-kit";
+import { HandlerContext } from "@xmtp/message-kit";
 
 import { textGeneration } from "../lib/openai.js";
+import { responseParser } from "../lib/openai.js";
 const chatHistories: Record<string, any[]> = {};
 
 interface EnsData {
@@ -131,7 +132,7 @@ export async function ensAgent(context: HandlerContext) {
     group,
   } = context;
 
-  const systemPrompt = generateSystemPrompt(context);
+  const systemPrompt = generateSystemPrompt(sender.address);
   try {
     let userPrompt = params?.prompt ?? content;
 
@@ -142,54 +143,72 @@ export async function ensAgent(context: HandlerContext) {
     );
     if (!group) chatHistories[sender.address] = history; // Update chat history for the user
 
-    const messages = reply
-      .split("\n")
-      .filter((message) => message.trim() !== "");
-    console.log(messages);
-    for (const message of messages) {
-      if (message.startsWith("/")) {
-        // Parse and execute the command
-        const response = await context.intent(message);
-        await context.send((response as ApiResponse)?.message);
-      } else {
-        // Send the message as a text response
-        await context.send(message);
-      }
-    }
+    await processResponseWithIntent(reply, context, sender.address);
+    return;
   } catch (error) {
     console.error("Error during OpenAI call:", error);
     await context.send("An error occurred while processing your request.");
   }
 }
 
-function generateSystemPrompt(context: HandlerContext) {
+async function processResponseWithIntent(
+  reply: string,
+  context: any,
+  senderAddress: string
+) {
+  let messages = reply
+    .split("\n")
+    .map((message: string) => responseParser(message))
+    .filter((message): message is string => message.length > 0);
+
+  for (const message of messages) {
+    if (message.startsWith("/")) {
+      const response = await context.intent(message);
+      if (response && response.message) {
+        let msg = responseParser(response.message);
+
+        chatHistories[senderAddress]?.push({
+          role: "system",
+          content: msg,
+        });
+
+        await context.send(response.message);
+      }
+    } else {
+      await context.send(message);
+    }
+  }
+}
+
+function generateSystemPrompt(address: string) {
   const systemPrompt = `
-    You are a helpful and playful ens domain register bot that lives inside a web3 messaging app.\n
-    - You can respond with multiple messages if needed. Each message should be separated by a newline character.
-    - You can trigger commands by only sending the command in a newline message.
-    - Only provide answers based on verified information.
-    - Do not make guesses or assumptions
-    - Users address is: {ADDRESS}
-    - Users can start a conversation by tagging you in a prompt like "@ens example.eth" or chatting 1:1
+You are a helpful and playful ens domain register bot that lives inside a web3 messaging app.\n
+- You can respond with multiple messages if needed. Each message should be separated by a newline character.
+- You can trigger commands by only sending the command in a newline message.
+- Only provide answers based on verified information.
+- Do not make guesses or assumptions
+- Users address is: ${address}
+- Users can start a conversation by tagging you in a prompt like "@ens example.eth" or chatting 1:1
 
-    ## Task
-    Start by telling the user whats possible. Guide the user in suggesting a domain name and help them with the registration process.  
-    - To trigger renewal: "/renew [domain]".
-    - You can also check the information about the domain by using the command "/info [domain]".
-    - You can also check if the domain is available by using the command "/check [domain]".
+## Task
+Start by telling the user whats possible. Guide the user in suggesting a domain name and help them with the registration process.  
+- To trigger renewal: "/renew [domain]".
+- You can also check the information about the domain by using the command "/info [domain]".
+- You can also check if the domain is available by using the command "/check [domain]".
 
-    ## Commands
-    - /help: Show the list of commands
-    - /check [domain]: Check if a domain is available
-    - /register [domain]: Register a domain
-    - /renew [domain]: Renew a domain
+Commands:
+- /help: Show the list of commands
+- /check [domain]: Check if a domain is available
+- /register [domain]: Register a domain
+- /renew [domain]: Renew a domain
+- /info [domain]: Get information about a domain
 
-    Format examples:
-    /register vitalik.eth 
-    /check vitalik.eth
-    /renew vitalik.eth
-    /info vitalik.eth
-    /help
+Examples:
+- /register vitalik.eth 
+- /check vitalik.eth
+- /renew vitalik.eth
+- /info vitalik.eth
+- /help
   .`;
 
   return systemPrompt;
