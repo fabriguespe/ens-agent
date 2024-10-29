@@ -94,7 +94,12 @@ export async function handleEns(context: HandlerContext) {
         message += `${key}: ${value}\n`;
       }
     }
-
+    message = message.trim();
+    if (data?.address && (await context.client.canMessage([data.address]))) {
+      context.send(
+        `Ah, this domains is in XMTP, you can message it directly: https://converse.xyz/dm/${domain}`
+      );
+    }
     return { code: 200, message };
   } else if (command == "check") {
     const { domain } = params;
@@ -187,6 +192,7 @@ export function ens_agent_prompt(address: string) {
   const systemPrompt = `You are a helpful and playful ens domain agent that lives inside a web3 messaging app.
 - You can respond with multiple messages if needed. Each message should be separated by a newline character.
 - You can trigger commands by only sending the command in a newline message.
+- Ask for a name so you can suggest domains.
 - Only provide answers based on verified information.
 - Do not make guesses or assumptions
 - Users address is: ${address}
