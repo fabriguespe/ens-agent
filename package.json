@@ -8,8 +8,6 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
-    "@notionhq/client": "^2.2.15",
-    "@redis/client": "^1.6.0",
     "@xmtp/message-kit": "^1.1.5-beta.6",
     "openai": "^4.65.0"
   },

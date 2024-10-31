@@ -1,35 +1,37 @@
 import { HandlerContext } from "@xmtp/message-kit";
+import { Client } from "@xmtp/xmtp-js";
+import {
+  getUserInfo,
+  getInfoCache,
+  InfoCache,
+  isOnXMTP,
+} from "../lib/resolver.js";
+import { textGeneration, responseParser } from "../lib/openai.js";
+import { ens_agent_prompt } from "../prompt.js";
+import type {
+  ensDomain,
+  converseUsername,
+  tipAddress,
+  chatHistories,
+  tipDomain,
+} from "../lib/types.js";
+import { frameUrl, ensUrl, baseTxUrl } from "../lib/types.js";
 
-import { textGeneration } from "../lib/openai.js";
-import { responseParser } from "../lib/openai.js";
-let chatHistories: Record<string, any[]> = {};
+let tipAddress: tipAddress = undefined;
+let tipDomain: tipDomain = undefined;
+let ensDomain: ensDomain = undefined;
+let converseUsername: converseUsername = undefined;
+let chatHistories: chatHistories = {};
+let infoCache: InfoCache = {};
 
-interface EnsData {
-  address?: string;
-  avatar?: string;
-  avatar_small?: string;
-  avatar_url?: string;
-  contentHash?: string;
-  description?: string;
-  ens?: string;
-  ens_primary?: string;
-  github?: string;
-  resolverAddress?: string;
-  twitter?: string;
-  url?: string;
-  wallets?: {
-    eth?: string;
-  };
-}
-
+// URL for the send transaction
 export async function handleEns(context: HandlerContext) {
   const {
     message: {
       content: { command, params, sender },
     },
   } = context;
-  const frameUrl = "https://ens.steer.fun/";
-  const baseUrl = "https://app.ens.domains/";
+
   if (command == "renew") {
     // Destructure and validate parameters for the ens command
     const { domain } = params;
@@ -39,8 +41,12 @@ export async function handleEns(context: HandlerContext) {
       return;
     }
 
-    const response = await fetch(`https://ensdata.net/${domain}`);
-    const data: EnsData = (await response.json()) as EnsData;
+    const { infoCache: retrievedInfoCache } = await getInfoCache(
+      domain,
+      infoCache,
+    );
+    infoCache = retrievedInfoCache;
+    let data = infoCache[domain].info;
 
     if (data?.address !== sender?.address) {
       return {
@@ -63,18 +69,17 @@ export async function handleEns(context: HandlerContext) {
       };
     }
     // Generate URL for the ens
-    let url_ens = baseUrl + domain + "/register";
+    let url_ens = ensUrl + domain;
     return { code: 200, message: `${url_ens}` };
-  } else if (command == "help") {
-    return {
-      code: 200,
-      message:
-        "Here is the list of commands:\n/register [domain]: Register a domain.\n/renew [domain]: Renew a domain.\n/info [domain]: Get information about a domain.\n/check [domain]: Check if a domain is available.\n/help: Show the list of commands",
-    };
   } else if (command == "info") {
     const { domain } = params;
-    const response = await fetch(`https://ensdata.net/${domain}`);
-    const data: EnsData = (await response.json()) as EnsData;
+
+    const { infoCache: retrievedInfoCache } = await getInfoCache(
+      domain,
+      infoCache,
+    );
+    infoCache = retrievedInfoCache;
+    let data = infoCache[domain].info;
 
     const formattedData = {
       Address: data?.address,
@@ -83,9 +88,9 @@ export async function handleEns(context: HandlerContext) {
       ENS: data?.ens,
       "Primary ENS": data?.ens_primary,
       GitHub: data?.github,
-      "Resolver address": data?.resolverAddress,
+      Resolver: data?.resolverAddress,
       Twitter: data?.twitter,
-      URL: `${baseUrl}${domain}`,
+      URL: `${ensUrl}${domain}`,
     };
 
     let message = "Domain information:\n\n";
@@ -94,15 +99,25 @@ export async function handleEns(context: HandlerContext) {
         message += `${key}: ${value}\n`;
       }
     }
+    message += `\n\nWould you like to tip the domain owner for getting there first 🤣?`;
     message = message.trim();
-    if (data?.address && (await context.client.canMessage([data.address]))) {
+    if (await isOnXMTP(context.v2client as Client, data?.ens, data?.address)) {
       context.send(
-        `Ah, this domains is in XMTP, you can message it directly: https://converse.xyz/dm/${domain}`
+        `Ah, this domains is in XMTP, you can message it directly: https://converse.xyz/dm/${domain}`,
       );
     }
     return { code: 200, message };
   } else if (command == "check") {
-    const { domain } = params;
+    console.log(params);
+    const { domain, cool_alternatives } = params;
+
+    const cool_alternativesFormat = cool_alternatives
+      ?.split(",")
+      .map(
+        (alternative: string, index: number) =>
+          `${index + 1}. ${alternative} ✨`,
+      )
+      .join("\n");
 
     if (!domain) {
       return {
@@ -110,65 +125,66 @@ export async function handleEns(context: HandlerContext) {
         message: "Please provide a domain name to check.",
       };
     }
-    const response = await fetch(`https://ensdata.net/${domain}`);
-    const data: EnsData = (await response.json()) as EnsData;
-
+    const { infoCache: retrievedInfoCache } = await getInfoCache(
+      domain,
+      infoCache,
+    );
+    infoCache = retrievedInfoCache;
+    let data = infoCache?.[domain]?.info;
     if (!data?.address) {
+      let message = `Looks like ${domain} is available! Do you want to register it? ${ensUrl}${domain}`;
       return {
         code: 200,
-        message: `Looks like ${domain} is available! Do you want to register it? ${baseUrl}${domain}`,
+        message,
       };
     } else {
+      let message = `Looks like ${domain} is already registered! What about these cool alternatives?\n\n${cool_alternativesFormat}`;
       return {
         code: 404,
-        message: `Looks like ${domain} is already registered! I can provide more info about this domain or else we can try cool alternatives.`,
+        message,
       };
     }
+  } else if (command == "tip") {
+    // Destructure and validate parameters for the send command
+    const { address } = params;
+
+    const { infoCache: retrievedInfoCache } = await getInfoCache(
+      address,
+      infoCache,
+    );
+    infoCache = retrievedInfoCache;
+    let data = infoCache[address].info;
+
+    tipAddress = data?.address;
+    tipDomain = data?.ens;
+
+    if (!address || !tipAddress) {
+      context.reply("Missing required parameters. Please provide address.");
+      return;
+    }
+    let txUrl = `${baseTxUrl}/transaction/?transaction_type=send&buttonName=Tip%20${tipDomain}&amount=1&token=USDC&receiver=${tipAddress}`;
+    // Generate URL for the send transaction
+    context.send(`Here is the url to send the tip:\n${txUrl}`);
+  } else if (command == "cool") {
+    return;
   }
 }
 
-export async function ensAgent(context: HandlerContext) {
-  if (!process?.env?.OPEN_AI_API_KEY) {
-    console.log("No OPEN_AI_API_KEY found in .env");
-    return;
-  }
-
-  const {
-    message: {
-      content: { content, params },
-      sender,
-    },
-    group,
-  } = context;
-
-  try {
-    let userPrompt = params?.prompt ?? content;
-
-    const { reply, history } = await textGeneration(
-      userPrompt,
-      ens_agent_prompt(sender.address),
-      chatHistories[sender.address]
-    );
-    if (!group) chatHistories[sender.address] = history; // Update chat history for the user
-
-    await processResponseWithIntent(reply, context, sender.address);
-  } catch (error) {
-    console.error("Error during OpenAI call:", error);
-    await context.send("An error occurred while processing your request.");
-  }
+export async function clearChatHistory() {
+  chatHistories = {};
 }
 
 async function processResponseWithIntent(
   reply: string,
   context: any,
-  senderAddress: string
+  senderAddress: string,
 ) {
-  console.log(reply);
   let messages = reply
     .split("\n")
     .map((message: string) => responseParser(message))
     .filter((message): message is string => message.length > 0);
 
+  console.log(messages);
   for (const message of messages) {
     if (message.startsWith("/")) {
       const response = await context.intent(message);
@@ -188,39 +204,45 @@ async function processResponseWithIntent(
   }
 }
 
-export function ens_agent_prompt(address: string) {
-  const systemPrompt = `You are a helpful and playful ens domain agent that lives inside a web3 messaging app.
-- You can respond with multiple messages if needed. Each message should be separated by a newline character.
-- You can trigger commands by only sending the command in a newline message.
-- Ask for a name so you can suggest domains.
-- Only provide answers based on verified information.
-- Do not make guesses or assumptions
-- Users address is: ${address}
-- Users can start a conversation by tagging you in a prompt like "@ensbot example.eth" or chatting 1:1
+export async function ensAgent(context: HandlerContext) {
+  if (!process?.env?.OPEN_AI_API_KEY) {
+    console.warn("No OPEN_AI_API_KEY found in .env");
+    return;
+  }
 
-## Task
-- Start by telling the user whats possible. Don't mention explicit commands in your response. Just the possibilities.
-- If a domain is registered, suggest 5 potential alternatives.
-- To trigger renewal: "/renew [domain]".
-- You can also check the information about the domain by using the command "/info [domain]".
-- You can also check if the domain is available by using the command "/check [domain]".
-- to register a domain use the command "/register [domain]".
-- to get help use the command "/help".
+  const {
+    message: {
+      content: { content, params },
+      sender,
+    },
+    group,
+  } = context;
 
-Commands:
-- /check [domain]: Check if a domain is available
-- /register [domain]: Register a domain
-- /renew [domain]: Renew a domain
-- /info [domain]: Get information about a domain
+  try {
+    let userPrompt = params?.prompt ?? content;
+    const { converseUsername: newConverseUsername, ensDomain: newEnsDomain } =
+      await getUserInfo(sender.address, ensDomain, converseUsername);
 
-Examples:
-- /register vitalik.eth 
-- /check vitalik.eth
-- /renew vitalik.eth
-- /info vitalik.eth`;
-  return systemPrompt;
-}
+    ensDomain = newEnsDomain;
+    converseUsername = newConverseUsername;
+    let txUrl = `${baseTxUrl}/transaction/?transaction_type=send&buttonName=Tip%20${tipDomain}&amount=1&token=USDC&receiver=${tipAddress}`;
 
-export async function clearChatHistory() {
-  chatHistories = {};
+    const { reply, history } = await textGeneration(
+      userPrompt,
+      await ens_agent_prompt(
+        sender.address,
+        ensDomain,
+        converseUsername,
+        tipAddress,
+        txUrl,
+      ),
+      chatHistories[sender.address],
+    );
+    if (!group) chatHistories[sender.address] = history; // Update chat history for the user
+
+    await processResponseWithIntent(reply, context, sender.address);
+  } catch (error) {
+    console.error("Error during OpenAI call:", error);
+    await context.send("An error occurred while processing your request.");
+  }
 }
