@@ -1,57 +1,41 @@
-import { HandlerContext } from "@xmtp/message-kit";
-import { Client } from "@xmtp/xmtp-js";
-import {
-  getUserInfo,
-  getInfoCache,
-  InfoCache,
-  isOnXMTP,
-} from "../lib/resolver.js";
-import { textGeneration, responseParser } from "../lib/openai.js";
-import { ens_agent_prompt } from "../prompt.js";
-import type {
-  ensDomain,
-  converseUsername,
-  tipAddress,
-  chatHistories,
-  tipDomain,
-} from "../lib/types.js";
-import { frameUrl, ensUrl, baseTxUrl } from "../lib/types.js";
+import { HandlerContext, SkillResponse } from "@xmtp/message-kit";
+import { getUserInfo, clearInfoCache, isOnXMTP } from "../lib/resolver.js";
+import { isAddress } from "viem";
+import { clearMemory } from "../lib/openai.js";
 
-let tipAddress: tipAddress = undefined;
-let tipDomain: tipDomain = undefined;
-let ensDomain: ensDomain = undefined;
-let converseUsername: converseUsername = undefined;
-let chatHistories: chatHistories = {};
-let infoCache: InfoCache = {};
+export const frameUrl = "https://ens.steer.fun/";
+export const ensUrl = "https://app.ens.domains/";
+export const baseTxUrl = "https://base-tx-frame.vercel.app";
 
-// URL for the send transaction
-export async function handleEns(context: HandlerContext) {
+export async function handleEns(
+  context: HandlerContext,
+): Promise<SkillResponse> {
   const {
     message: {
       content: { command, params, sender },
     },
   } = context;
-
-  if (command == "renew") {
+  if (command == "reset") {
+    clearMemory();
+    return { code: 200, message: "Conversation reset." };
+  } else if (command == "renew") {
     // Destructure and validate parameters for the ens command
     const { domain } = params;
     // Check if the user holds the domain
     if (!domain) {
-      context.reply("Missing required parameters. Please provide domain.");
-      return;
+      return {
+        code: 400,
+        message: "Missing required parameters. Please provide domain.",
+      };
     }
 
-    const { infoCache: retrievedInfoCache } = await getInfoCache(
-      domain,
-      infoCache,
-    );
-    infoCache = retrievedInfoCache;
-    let data = infoCache[domain].info;
+    const data = await getUserInfo(domain);
 
-    if (data?.address !== sender?.address) {
+    if (!data?.address || data?.address !== sender?.address) {
       return {
         code: 403,
-        message: "You do not hold this domain. Only the owner can renew it.",
+        message:
+          "Looks like this domain is not registered to you. Only the owner can renew it.",
       };
     }
 
@@ -74,22 +58,23 @@ export async function handleEns(context: HandlerContext) {
   } else if (command == "info") {
     const { domain } = params;
 
-    const { infoCache: retrievedInfoCache } = await getInfoCache(
-      domain,
-      infoCache,
-    );
-    infoCache = retrievedInfoCache;
-    let data = infoCache[domain].info;
+    const data = await getUserInfo(domain);
+    if (!data?.ensDomain) {
+      return {
+        code: 404,
+        message: "Domain not found.",
+      };
+    }
 
     const formattedData = {
       Address: data?.address,
-      "Avatar URL": data?.avatar_url,
-      Description: data?.description,
-      ENS: data?.ens,
-      "Primary ENS": data?.ens_primary,
-      GitHub: data?.github,
-      Resolver: data?.resolverAddress,
-      Twitter: data?.twitter,
+      "Avatar URL": data?.ensInfo?.avatar,
+      Description: data?.ensInfo?.description,
+      ENS: data?.ensDomain,
+      "Primary ENS": data?.ensInfo?.ens_primary,
+      GitHub: data?.ensInfo?.github,
+      Resolver: data?.ensInfo?.resolverAddress,
+      Twitter: data?.ensInfo?.twitter,
       URL: `${ensUrl}${domain}`,
     };
 
@@ -101,23 +86,20 @@ export async function handleEns(context: HandlerContext) {
     }
     message += `\n\nWould you like to tip the domain owner for getting there first 🤣?`;
     message = message.trim();
-    if (await isOnXMTP(context.v2client as Client, data?.ens, data?.address)) {
-      context.send(
+    if (
+      await isOnXMTP(
+        context.v2client,
+        data?.ensInfo?.ens,
+        data?.ensInfo?.address,
+      )
+    ) {
+      await context.send(
         `Ah, this domains is in XMTP, you can message it directly: https://converse.xyz/dm/${domain}`,
       );
     }
     return { code: 200, message };
   } else if (command == "check") {
-    console.log(params);
-    const { domain, cool_alternatives } = params;
-
-    const cool_alternativesFormat = cool_alternatives
-      ?.split(",")
-      .map(
-        (alternative: string, index: number) =>
-          `${index + 1}. ${alternative} ✨`,
-      )
-      .join("\n");
+    const { domain } = params;
 
     if (!domain) {
       return {
@@ -125,124 +107,73 @@ export async function handleEns(context: HandlerContext) {
         message: "Please provide a domain name to check.",
       };
     }
-    const { infoCache: retrievedInfoCache } = await getInfoCache(
-      domain,
-      infoCache,
-    );
-    infoCache = retrievedInfoCache;
-    let data = infoCache?.[domain]?.info;
+
+    const data = await getUserInfo(domain);
     if (!data?.address) {
-      let message = `Looks like ${domain} is available! Do you want to register it? ${ensUrl}${domain}`;
+      let message = `Looks like ${domain} is available! Here you can register it: ${ensUrl}${domain} or would you like to see some cool alternatives?`;
       return {
         code: 200,
         message,
       };
     } else {
-      let message = `Looks like ${domain} is already registered! What about these cool alternatives?\n\n${cool_alternativesFormat}`;
+      let message = `Looks like ${domain} is already registered!`;
+      await context.skill("/cool " + domain);
       return {
         code: 404,
         message,
       };
     }
   } else if (command == "tip") {
-    // Destructure and validate parameters for the send command
     const { address } = params;
-
-    const { infoCache: retrievedInfoCache } = await getInfoCache(
-      address,
-      infoCache,
-    );
-    infoCache = retrievedInfoCache;
-    let data = infoCache[address].info;
-
-    tipAddress = data?.address;
-    tipDomain = data?.ens;
-
-    if (!address || !tipAddress) {
-      context.reply("Missing required parameters. Please provide address.");
-      return;
+    if (!address) {
+      return {
+        code: 400,
+        message: "Please provide an address to tip.",
+      };
     }
-    let txUrl = `${baseTxUrl}/transaction/?transaction_type=send&buttonName=Tip%20${tipDomain}&amount=1&token=USDC&receiver=${tipAddress}`;
-    // Generate URL for the send transaction
-    context.send(`Here is the url to send the tip:\n${txUrl}`);
+    const data = await getUserInfo(address);
+    let txUrl = `${baseTxUrl}/transaction/?transaction_type=send&buttonName=Tip%20${data?.ensDomain ?? ""}&amount=1&token=USDC&receiver=${
+      isAddress(address) ? address : data?.address
+    }`;
+    console.log(txUrl);
+    return {
+      code: 200,
+      message: txUrl,
+    };
   } else if (command == "cool") {
-    return;
+    const { domain } = params;
+    //What about these cool alternatives?\
+    return {
+      code: 200,
+      message: `${generateCoolAlternatives(domain)}`,
+    };
+  } else {
+    return { code: 400, message: "Command not found." };
   }
 }
 
-export async function clearChatHistory() {
-  chatHistories = {};
-}
-
-async function processResponseWithIntent(
-  reply: string,
-  context: any,
-  senderAddress: string,
-) {
-  let messages = reply
-    .split("\n")
-    .map((message: string) => responseParser(message))
-    .filter((message): message is string => message.length > 0);
-
-  console.log(messages);
-  for (const message of messages) {
-    if (message.startsWith("/")) {
-      const response = await context.intent(message);
-      if (response && response.message) {
-        let msg = responseParser(response.message);
-
-        chatHistories[senderAddress]?.push({
-          role: "system",
-          content: msg,
-        });
-
-        await context.send(response.message);
-      }
-    } else {
-      await context.send(message);
-    }
-  }
-}
-
-export async function ensAgent(context: HandlerContext) {
-  if (!process?.env?.OPEN_AI_API_KEY) {
-    console.warn("No OPEN_AI_API_KEY found in .env");
-    return;
-  }
-
-  const {
-    message: {
-      content: { content, params },
-      sender,
-    },
-    group,
-  } = context;
-
-  try {
-    let userPrompt = params?.prompt ?? content;
-    const { converseUsername: newConverseUsername, ensDomain: newEnsDomain } =
-      await getUserInfo(sender.address, ensDomain, converseUsername);
-
-    ensDomain = newEnsDomain;
-    converseUsername = newConverseUsername;
-    let txUrl = `${baseTxUrl}/transaction/?transaction_type=send&buttonName=Tip%20${tipDomain}&amount=1&token=USDC&receiver=${tipAddress}`;
-
-    const { reply, history } = await textGeneration(
-      userPrompt,
-      await ens_agent_prompt(
-        sender.address,
-        ensDomain,
-        converseUsername,
-        tipAddress,
-        txUrl,
-      ),
-      chatHistories[sender.address],
+export const generateCoolAlternatives = (domain: string) => {
+  const suffixes = ["lfg", "cool", "degen", "moon", "base", "gm"];
+  const alternatives = [];
+  for (let i = 0; i < 5; i++) {
+    const randomPosition = Math.random() < 0.5;
+    const baseDomain = domain.replace(/\.eth$/, ""); // Remove any existing .eth suffix
+    alternatives.push(
+      randomPosition
+        ? `${suffixes[i]}${baseDomain}.eth`
+        : `${baseDomain}${suffixes[i]}.eth`,
     );
-    if (!group) chatHistories[sender.address] = history; // Update chat history for the user
-
-    await processResponseWithIntent(reply, context, sender.address);
-  } catch (error) {
-    console.error("Error during OpenAI call:", error);
-    await context.send("An error occurred while processing your request.");
   }
+
+  const cool_alternativesFormat = alternatives
+    .map(
+      (alternative: string, index: number) => `${index + 1}. ${alternative} ✨`,
+    )
+    .join("\n");
+  return cool_alternativesFormat;
+};
+
+export async function clear() {
+  clearMemory();
+  clearInfoCache();
 }
