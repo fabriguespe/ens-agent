@@ -38,9 +38,10 @@ run(
       await context.send("An error occurred while processing your request.");
     }
   },
+
   {
     client: {
-      logging: process.env.NODE_ENV === "production" ? "debug" : "off",
+      logging: "debug",
     },
   }
 );
