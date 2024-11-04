@@ -1,14 +1,14 @@
 import { HandlerContext, SkillResponse } from "@xmtp/message-kit";
 import { getUserInfo, clearInfoCache, isOnXMTP } from "../lib/resolver.js";
 import { isAddress } from "viem";
-import { clearMemory } from "../lib/openai.js";
+import { clearMemory } from "../lib/gpt.js";
 
 export const frameUrl = "https://ens.steer.fun/";
 export const ensUrl = "https://app.ens.domains/";
 export const baseTxUrl = "https://base-tx-frame.vercel.app";
 
 export async function handleEns(
-  context: HandlerContext,
+  context: HandlerContext
 ): Promise<SkillResponse> {
   const {
     message: {
@@ -90,11 +90,11 @@ export async function handleEns(
       await isOnXMTP(
         context.v2client,
         data?.ensInfo?.ens,
-        data?.ensInfo?.address,
+        data?.ensInfo?.address
       )
     ) {
       await context.send(
-        `Ah, this domains is in XMTP, you can message it directly: https://converse.xyz/dm/${domain}`,
+        `Ah, this domains is in XMTP, you can message it directly: https://converse.xyz/dm/${domain}`
       );
     }
     return { code: 200, message };
@@ -132,7 +132,9 @@ export async function handleEns(
       };
     }
     const data = await getUserInfo(address);
-    let txUrl = `${baseTxUrl}/transaction/?transaction_type=send&buttonName=Tip%20${data?.ensDomain ?? ""}&amount=1&token=USDC&receiver=${
+    let txUrl = `${baseTxUrl}/transaction/?transaction_type=send&buttonName=Tip%20${
+      data?.ensDomain ?? ""
+    }&amount=1&token=USDC&receiver=${
       isAddress(address) ? address : data?.address
     }`;
     console.log(txUrl);
@@ -161,13 +163,13 @@ export const generateCoolAlternatives = (domain: string) => {
     alternatives.push(
       randomPosition
         ? `${suffixes[i]}${baseDomain}.eth`
-        : `${baseDomain}${suffixes[i]}.eth`,
+        : `${baseDomain}${suffixes[i]}.eth`
     );
   }
 
   const cool_alternativesFormat = alternatives
     .map(
-      (alternative: string, index: number) => `${index + 1}. ${alternative} ✨`,
+      (alternative: string, index: number) => `${index + 1}. ${alternative} ✨`
     )
     .join("\n");
   return cool_alternativesFormat;

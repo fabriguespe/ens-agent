@@ -1,5 +1,4 @@
-import dotenv from "dotenv";
-dotenv.config();
+import "dotenv/config";
 import type { SkillGroup } from "@xmtp/message-kit";
 import OpenAI from "openai";
 const openai = new OpenAI({
@@ -73,13 +72,13 @@ export async function agentResponse(
   sender: { address: string },
   userPrompt: string,
   systemPrompt: string,
-  context: any,
+  context: any
 ) {
   try {
     const { reply } = await textGeneration(
       sender.address,
       userPrompt,
-      systemPrompt,
+      systemPrompt
     );
     await processMultilineResponse(sender.address, reply, context);
   } catch (error) {
@@ -90,7 +89,7 @@ export async function agentResponse(
 export async function textGeneration(
   address: string,
   userPrompt: string,
-  systemPrompt: string,
+  systemPrompt: string
 ) {
   let messages = chatMemory.getHistory(address);
   chatMemory.initializeWithSystem(address, systemPrompt);
@@ -129,7 +128,7 @@ export async function textGeneration(
 export async function processMultilineResponse(
   address: string,
   reply: string,
-  context: any,
+  context: any
 ) {
   let messages = reply
     .split("\n")

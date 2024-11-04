@@ -1,5 +1,5 @@
 import { run, HandlerContext } from "@xmtp/message-kit";
-import { textGeneration, processMultilineResponse } from "./lib/openai.js";
+import { textGeneration, processMultilineResponse } from "./lib/gpt.js";
 import { agent_prompt } from "./prompt.js";
 import { getUserInfo } from "./lib/resolver.js";
 
@@ -38,10 +38,9 @@ run(
       await context.send("An error occurred while processing your request.");
     }
   },
-
   {
     client: {
-      logging: "debug",
+      logging: process.env.NODE_ENV === "production" ? "debug" : "off",
     },
   }
 );
