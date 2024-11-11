@@ -1,26 +1,22 @@
 import { skills } from "./skills.js";
 import {
-  getUserInfo,
   UserInfo,
   PROMPT_USER_CONTENT,
   PROMPT_RULES,
   PROMPT_SKILLS_AND_EXAMPLES,
+  PROMPT_REPLACE_VARIABLES,
 } from "@xmtp/message-kit";
 
 export async function agent_prompt(userInfo: UserInfo) {
   let { address, ensDomain, converseUsername, preferredName } = userInfo;
 
   //Update the name of the agent with predefined prompt
-  let systemPrompt = PROMPT_RULES.replace("{NAME}", skills?.[0]?.tag ?? "@ens");
-
-  //Add user context to the prompt
-  systemPrompt += PROMPT_USER_CONTENT(userInfo);
-
-  //Add skills and examples to the prompt
-  systemPrompt += PROMPT_SKILLS_AND_EXAMPLES(skills, "@ens");
+  let systemPrompt =
+    PROMPT_RULES +
+    PROMPT_USER_CONTENT(userInfo) +
+    PROMPT_SKILLS_AND_EXAMPLES(skills, "@ens");
 
   systemPrompt += `
-
 ## Example responses:
 
 1. Check if the user does not have a ENS domain
@@ -59,5 +55,11 @@ export async function agent_prompt(userInfo: UserInfo) {
   But you forgot to add the command at the end of the message.
   You should have said something like: "Looks like vitalik.eth is registered! What about these cool alternatives?\n/cool vitalik.eth
 `;
+  systemPrompt = PROMPT_REPLACE_VARIABLES(
+    systemPrompt,
+    userInfo?.address ?? "",
+    userInfo,
+    "@ens"
+  );
   return systemPrompt;
 }
