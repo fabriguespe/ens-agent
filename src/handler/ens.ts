@@ -1,18 +1,19 @@
 import { HandlerContext, SkillResponse } from "@xmtp/message-kit";
-import { getUserInfo, clearInfoCache, isOnXMTP } from "../lib/resolver.js";
+import { getUserInfo, clearInfoCache, isOnXMTP } from "@xmtp/message-kit";
 import { isAddress } from "viem";
-import { clearMemory } from "../lib/gpt.js";
+import { clearMemory } from "@xmtp/message-kit";
 
 export const frameUrl = "https://ens.steer.fun/";
 export const ensUrl = "https://app.ens.domains/";
 export const baseTxUrl = "https://base-tx-frame.vercel.app";
 
 export async function handleEns(
-  context: HandlerContext
-): Promise<SkillResponse> {
+  context: HandlerContext,
+): Promise<SkillResponse | undefined> {
   const {
     message: {
-      content: { command, params, sender },
+      sender,
+      content: { command, params },
     },
   } = context;
   if (command == "reset") {
@@ -86,15 +87,9 @@ export async function handleEns(
     }
     message += `\n\nWould you like to tip the domain owner for getting there first 🤣?`;
     message = message.trim();
-    if (
-      await isOnXMTP(
-        context.v2client,
-        data?.ensInfo?.ens,
-        data?.ensInfo?.address
-      )
-    ) {
+    if (await isOnXMTP(context.client, context.v2client, sender?.address)) {
       await context.send(
-        `Ah, this domains is in XMTP, you can message it directly: https://converse.xyz/dm/${domain}`
+        `Ah, this domains is in XMTP, you can message it directly: https://converse.xyz/dm/${domain}`,
       );
     }
     return { code: 200, message };
@@ -117,7 +112,7 @@ export async function handleEns(
       };
     } else {
       let message = `Looks like ${domain} is already registered!`;
-      await context.skill("/cool " + domain);
+      await context.executeSkill("/cool " + domain);
       return {
         code: 404,
         message,
@@ -132,9 +127,7 @@ export async function handleEns(
       };
     }
     const data = await getUserInfo(address);
-    let txUrl = `${baseTxUrl}/transaction/?transaction_type=send&buttonName=Tip%20${
-      data?.ensDomain ?? ""
-    }&amount=1&token=USDC&receiver=${
+    let txUrl = `${baseTxUrl}/transaction/?transaction_type=send&buttonName=Tip%20${data?.ensDomain ?? ""}&amount=1&token=USDC&receiver=${
       isAddress(address) ? address : data?.address
     }`;
     console.log(txUrl);
@@ -163,13 +156,13 @@ export const generateCoolAlternatives = (domain: string) => {
     alternatives.push(
       randomPosition
         ? `${suffixes[i]}${baseDomain}.eth`
-        : `${baseDomain}${suffixes[i]}.eth`
+        : `${baseDomain}${suffixes[i]}.eth`,
     );
   }
 
   const cool_alternativesFormat = alternatives
     .map(
-      (alternative: string, index: number) => `${index + 1}. ${alternative} ✨`
+      (alternative: string, index: number) => `${index + 1}. ${alternative} ✨`,
     )
     .join("\n");
   return cool_alternativesFormat;
