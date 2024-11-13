@@ -186,4 +186,4 @@ export const skills: SkillGroup[] = [
 
 ---
 
-Made with ❤️ by [Ephemera](https://ephemerahq.com).
+Made with ❤️ by [XMTP](https://xmtp.org).
