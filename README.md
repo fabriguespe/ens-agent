@@ -183,3 +183,7 @@ export const skills: SkillGroup[] = [
   },
 ];
 ```
+
+---
+
+Made with ❤️ by [Ephemera](https://ephemerahq.com).
