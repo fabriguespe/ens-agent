@@ -21,11 +21,11 @@ run(async (context: HandlerContext) => {
     const { reply } = await textGeneration(
       sender.address,
       userPrompt,
-      await agent_prompt(userInfo),
+      await agent_prompt(userInfo)
     );
     await processMultilineResponse(sender.address, reply, context);
   } catch (error) {
-    console.error("Error during OpenAI call:", error);
+    console.error("Error during OpenAI call:", error); // ja
     await context.send("An error occurred while processing your request.");
   }
 });
