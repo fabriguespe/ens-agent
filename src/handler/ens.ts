@@ -8,19 +8,19 @@ export const ensUrl = "https://app.ens.domains/";
 export const baseTxUrl = "https://base-tx-frame.vercel.app";
 
 export async function handleEns(
-  context: HandlerContext,
+  context: HandlerContext
 ): Promise<SkillResponse | undefined> {
   const {
     message: {
       sender,
-      content: { command, params },
+      content: { skill, params },
     },
   } = context;
-  console.log(command, params);
-  if (command == "reset") {
+  console.log(skill, params);
+  if (skill == "reset") {
     clearMemory();
     return { code: 200, message: "Conversation reset." };
-  } else if (command == "renew") {
+  } else if (skill == "renew") {
     // Destructure and validate parameters for the ens command
     const { domain } = params;
     // Check if the user holds the domain
@@ -44,7 +44,7 @@ export async function handleEns(
     // Generate URL for the ens
     let url_ens = frameUrl + "frames/manage?name=" + domain;
     return { code: 200, message: `${url_ens}` };
-  } else if (command == "register") {
+  } else if (skill == "register") {
     // Destructure and validate parameters for the ens command
     const { domain } = params;
 
@@ -57,7 +57,7 @@ export async function handleEns(
     // Generate URL for the ens
     let url_ens = ensUrl + domain;
     return { code: 200, message: `${url_ens}` };
-  } else if (command == "info") {
+  } else if (skill == "info") {
     const { domain } = params;
 
     const data = await getUserInfo(domain);
@@ -90,11 +90,11 @@ export async function handleEns(
     message = message.trim();
     if (await isOnXMTP(context.client, context.v2client, sender?.address)) {
       await context.send(
-        `Ah, this domains is in XMTP, you can message it directly: https://converse.xyz/dm/${domain}`,
+        `Ah, this domains is in XMTP, you can message it directly: https://converse.xyz/dm/${domain}`
       );
     }
     return { code: 200, message };
-  } else if (command == "check") {
+  } else if (skill == "check") {
     const { domain } = params;
 
     if (!domain) {
@@ -119,7 +119,7 @@ export async function handleEns(
         message,
       };
     }
-  } else if (command == "tip") {
+  } else if (skill == "tip") {
     const { address } = params;
     if (!address) {
       return {
@@ -128,7 +128,9 @@ export async function handleEns(
       };
     }
     const data = await getUserInfo(address);
-    let txUrl = `${baseTxUrl}/transaction/?transaction_type=send&buttonName=Tip%20${data?.ensDomain ?? ""}&amount=1&token=USDC&receiver=${
+    let txUrl = `${baseTxUrl}/transaction/?transaction_type=send&buttonName=Tip%20${
+      data?.ensDomain ?? ""
+    }&amount=1&token=USDC&receiver=${
       isAddress(address) ? address : data?.address
     }`;
     console.log(txUrl);
@@ -136,7 +138,7 @@ export async function handleEns(
       code: 200,
       message: txUrl,
     };
-  } else if (command == "cool") {
+  } else if (skill == "cool") {
     const { domain } = params;
     //What about these cool alternatives?\
     return {
@@ -157,13 +159,13 @@ export const generateCoolAlternatives = (domain: string) => {
     alternatives.push(
       randomPosition
         ? `${suffixes[i]}${baseDomain}.eth`
-        : `${baseDomain}${suffixes[i]}.eth`,
+        : `${baseDomain}${suffixes[i]}.eth`
     );
   }
 
   const cool_alternativesFormat = alternatives
     .map(
-      (alternative: string, index: number) => `${index + 1}. ${alternative} ✨`,
+      (alternative: string, index: number) => `${index + 1}. ${alternative} ✨`
     )
     .join("\n");
   return cool_alternativesFormat;
