@@ -1,4 +1,4 @@
-import { handleEns } from "./handler/ens.js";
+import { handleEns } from "./handler.js";
 import type { SkillGroup } from "@xmtp/message-kit";
 
 export const skills: SkillGroup[] = [
@@ -9,7 +9,6 @@ export const skills: SkillGroup[] = [
     skills: [
       {
         skill: "/register [domain]",
-        triggers: ["/register"],
         handler: handleEns,
         description:
           "Register a new ENS domain. Returns a URL to complete the registration process.",
@@ -21,20 +20,7 @@ export const skills: SkillGroup[] = [
         },
       },
       {
-        skill: "/exists",
-        examples: ["/exists"],
-        handler: handleEns,
-        triggers: ["/exists"],
-        description: "Check if an address is onboarded.",
-        params: {
-          address: {
-            type: "address",
-          },
-        },
-      },
-      {
         skill: "/info [domain]",
-        triggers: ["/info"],
         handler: handleEns,
         description:
           "Get detailed information about an ENS domain including owner, expiry date, and resolver.",
@@ -47,7 +33,6 @@ export const skills: SkillGroup[] = [
       },
       {
         skill: "/renew [domain]",
-        triggers: ["/renew"],
         handler: handleEns,
         description:
           "Extend the registration period of your ENS domain. Returns a URL to complete the renewal.",
@@ -60,7 +45,6 @@ export const skills: SkillGroup[] = [
       },
       {
         skill: "/check [domain]",
-        triggers: ["/check"],
         handler: handleEns,
         examples: ["/check vitalik.eth", "/check fabri.base.eth"],
         description: "Check if a domain is available.",
@@ -72,7 +56,6 @@ export const skills: SkillGroup[] = [
       },
       {
         skill: "/cool [domain]",
-        triggers: ["/cool"],
         examples: ["/cool vitalik.eth"],
         handler: handleEns,
         description: "Get cool alternatives for a .eth domain.",
@@ -84,7 +67,6 @@ export const skills: SkillGroup[] = [
       },
       {
         skill: "/reset",
-        triggers: ["/reset"],
         examples: ["/reset"],
         handler: handleEns,
         description: "Reset the conversation.",
@@ -93,7 +75,6 @@ export const skills: SkillGroup[] = [
       {
         skill: "/tip [address]",
         description: "Show a URL for tipping a domain owner.",
-        triggers: ["/tip"],
         handler: handleEns,
         examples: ["/tip 0x1234567890123456789012345678901234567890"],
         params: {

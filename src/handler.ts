@@ -1,11 +1,10 @@
 import { HandlerContext, SkillResponse } from "@xmtp/message-kit";
 import { getUserInfo, clearInfoCache, isOnXMTP } from "@xmtp/message-kit";
-import { isAddress } from "viem";
 import { clearMemory } from "@xmtp/message-kit";
 
 export const frameUrl = "https://ens.steer.fun/";
 export const ensUrl = "https://app.ens.domains/";
-export const baseTxUrl = "https://base-tx-frame.vercel.app";
+export const txpayUrl = "https://txpay.vercel.app";
 
 export async function handleEns(
   context: HandlerContext
@@ -16,12 +15,12 @@ export async function handleEns(
       content: { skill, params },
     },
   } = context;
-  console.log(skill, params);
+
   if (skill == "reset") {
     clearMemory();
     return { code: 200, message: "Conversation reset." };
   } else if (skill == "renew") {
-    // Destructure and validate parameters for the ens command
+    // Destructure and validate parameters for the ens
     const { domain } = params;
     // Check if the user holds the domain
     if (!domain) {
@@ -45,7 +44,7 @@ export async function handleEns(
     let url_ens = frameUrl + "frames/manage?name=" + domain;
     return { code: 200, message: `${url_ens}` };
   } else if (skill == "register") {
-    // Destructure and validate parameters for the ens command
+    // Destructure and validate parameters for the ens
     const { domain } = params;
 
     if (!domain) {
@@ -56,6 +55,7 @@ export async function handleEns(
     }
     // Generate URL for the ens
     let url_ens = ensUrl + domain;
+    context.send(`${url_ens}`);
     return { code: 200, message: `${url_ens}` };
   } else if (skill == "info") {
     const { domain } = params;
@@ -128,15 +128,12 @@ export async function handleEns(
       };
     }
     const data = await getUserInfo(address);
-    let txUrl = `${baseTxUrl}/transaction/?transaction_type=send&buttonName=Tip%20${
-      data?.ensDomain ?? ""
-    }&amount=1&token=USDC&receiver=${
-      isAddress(address) ? address : data?.address
-    }`;
-    console.log(txUrl);
+
+    let sendUrl = `${txpayUrl}/?&amount=1&token=USDC&receiver=${address}`;
+
     return {
       code: 200,
-      message: txUrl,
+      message: sendUrl,
     };
   } else if (skill == "cool") {
     const { domain } = params;
@@ -146,7 +143,7 @@ export async function handleEns(
       message: `${generateCoolAlternatives(domain)}`,
     };
   } else {
-    return { code: 400, message: "Command not found." };
+    return { code: 400, message: "Skill not found." };
   }
 }
 
