@@ -12,7 +12,6 @@ import { registerSkill as registerSkill } from "./handlers/register.js";
 import { registerSkill as renewSkill } from "./handlers/renew.js";
 import { registerSkill as resetSkill } from "./handlers/reset.js";
 import { registerSkill as tipSkill } from "./handlers/tip.js";
-import fs from "fs";
 
 export const frameUrl = "https://ens.steer.fun/";
 export const ensUrl = "https://app.ens.domains/";
@@ -47,7 +46,6 @@ run(
       skills,
       "@ens"
     );
-    fs.writeFileSync("example_prompt.md", prompt);
     await agentReply(context, prompt);
   },
   { skills }

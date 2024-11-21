@@ -1,4 +1,4 @@
-import { XMTPContext, x } from "@xmtp/message-kit";
+import { XMTPContext } from "@xmtp/message-kit";
 
 import type { skillAction } from "@xmtp/message-kit";
 
@@ -30,5 +30,6 @@ export async function handleTip(context: XMTPContext) {
       message: "Please provide an address to tip.",
     };
   }
-  context.sendPayment(1, "USDC", address);
+
+  context.sendPayment(1, "USDC", address); // Send 1 US
 }
