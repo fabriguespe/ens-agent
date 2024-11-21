@@ -1,5 +1,4 @@
-import { txpayUrl } from "../index.js";
-import { XMTPContext, getUserInfo } from "@xmtp/message-kit";
+import { XMTPContext, x } from "@xmtp/message-kit";
 
 import type { skillAction } from "@xmtp/message-kit";
 
@@ -31,12 +30,5 @@ export async function handleTip(context: XMTPContext) {
       message: "Please provide an address to tip.",
     };
   }
-  const data = await getUserInfo(address);
-
-  let sendUrl = `${txpayUrl}/?&amount=1&token=USDC&receiver=${address}`;
-
-  return {
-    code: 200,
-    message: sendUrl,
-  };
+  context.sendPayment(1, "USDC", address);
 }

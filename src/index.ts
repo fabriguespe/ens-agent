@@ -16,7 +16,6 @@ import fs from "fs";
 
 export const frameUrl = "https://ens.steer.fun/";
 export const ensUrl = "https://app.ens.domains/";
-export const txpayUrl = "https://txpay.vercel.app";
 
 export const skills = [
   {
@@ -46,10 +45,10 @@ run(
       systemPrompt,
       sender.address,
       skills,
-      "@ens",
+      "@ens"
     );
     fs.writeFileSync("example_prompt.md", prompt);
     await agentReply(context, prompt);
   },
-  { skills },
+  { skills }
 );
