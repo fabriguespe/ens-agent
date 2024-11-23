@@ -1,5 +1,5 @@
 {
-  "name": "ensagent",
+  "name": "agent",
   "private": true,
   "type": "module",
   "scripts": {
@@ -9,7 +9,7 @@
     "postinstall": "tsc"
   },
   "dependencies": {
-    "@xmtp/message-kit": "1.1.10-beta.5"
+    "@xmtp/message-kit": "1.1.11"
   },
   "engines": {
     "node": ">=20"
