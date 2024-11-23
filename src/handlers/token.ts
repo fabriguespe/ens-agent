@@ -23,7 +23,7 @@ export async function handler(context: XMTPContext) {
     },
   } = context;
   const response = await fetch(
-    `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${symbol}`,
+    `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${symbol}`
   );
   if (!response.ok) {
     context.send("Token not found");
