@@ -1,9 +1,9 @@
 import { XMTPContext } from "@xmtp/message-kit";
 import type { Skill } from "@xmtp/message-kit";
 
-export const registerSkill: Skill[] = [
+export const token: Skill[] = [
   {
-    skill: "/token [symbol]",
+    skill: "token",
     handler: handler,
     examples: ["/token bitcoin", "/token ethereum"],
     description: "Get real time price of a any token.",

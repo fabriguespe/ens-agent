@@ -6,15 +6,15 @@ import {
   Agent,
 } from "@xmtp/message-kit";
 import { systemPrompt } from "./prompt.js";
-import { registerSkill as checkSkill } from "./handlers/check.js";
-import { registerSkill as coolSkill } from "./handlers/cool.js";
-import { registerSkill as infoSkill } from "./handlers/info.js";
-import { registerSkill as registerSkill } from "./handlers/register.js";
-import { registerSkill as renewSkill } from "./handlers/renew.js";
-import { registerSkill as paySkill } from "./handlers/pay.js";
-import { registerSkill as resetSkill } from "./handlers/reset.js";
-import { registerSkill as tokenSkill } from "./handlers/token.js";
-import { registerSkill as gameSkill } from "./handlers/game.js";
+import { check } from "./skills/check.js";
+import { cool } from "./skills/cool.js";
+import { info } from "./skills/info.js";
+import { register } from "./skills/register.js";
+import { renew } from "./skills/renew.js";
+import { pay } from "./skills/pay.js";
+import { reset } from "./skills/reset.js";
+import { token } from "./skills/token.js";
+import { game } from "./skills/game.js";
 import fs from "fs";
 
 export const frameUrl = "https://ens.steer.fun/";
@@ -26,15 +26,15 @@ export const agent: Agent = {
   tag: "@bot",
   description: "A web3 agent with a lot of skills.",
   skills: [
-    ...checkSkill,
-    ...coolSkill,
-    ...infoSkill,
-    ...registerSkill,
-    ...renewSkill,
-    ...resetSkill,
-    ...paySkill,
-    ...tokenSkill,
-    ...gameSkill,
+    ...check,
+    ...cool,
+    ...info,
+    ...register,
+    ...renew,
+    ...reset,
+    ...pay,
+    ...token,
+    ...game,
   ],
 };
 // [!endregion skills]
@@ -52,7 +52,7 @@ run(
     fs.writeFileSync("example_prompt.md", prompt);
     await agentReply(context, prompt);
   },
-  { agent },
+  { agent }
 );
 
 // [!endregion run]

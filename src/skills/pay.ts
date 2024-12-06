@@ -1,9 +1,9 @@
 import { XMTPContext } from "@xmtp/message-kit";
 import type { Skill } from "@xmtp/message-kit";
 
-export const registerSkill: Skill[] = [
+export const pay: Skill[] = [
   {
-    skill: "/pay [amount] [token] [username]",
+    skill: "pay",
     examples: ["/pay 10 vitalik.eth"],
     description:
       "Send a specified amount of a cryptocurrency to a destination address.",

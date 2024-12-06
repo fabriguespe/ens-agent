@@ -3,9 +3,9 @@ import { getUserInfo, XMTPContext } from "@xmtp/message-kit";
 
 import type { Skill } from "@xmtp/message-kit";
 
-export const registerSkill: Skill[] = [
+export const renew: Skill[] = [
   {
-    skill: "/renew [domain]",
+    skill: "renew",
     handler: handler,
     description:
       "Extend the registration period of your ENS domain. Returns a URL to complete the renewal.",

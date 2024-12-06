@@ -2,9 +2,9 @@ import { XMTPContext } from "@xmtp/message-kit";
 
 import type { Skill } from "@xmtp/message-kit";
 
-export const registerSkill: Skill[] = [
+export const cool: Skill[] = [
   {
-    skill: "/cool [domain]",
+    skill: "cool",
     examples: ["/cool vitalik.eth"],
     handler: handler,
     description: "Get cool alternatives for a .eth domain.",
@@ -39,13 +39,13 @@ export const generateCoolAlternatives = (domain: string) => {
     alternatives.push(
       randomPosition
         ? `${suffixes[i]}${baseDomain}.eth`
-        : `${baseDomain}${suffixes[i]}.eth`,
+        : `${baseDomain}${suffixes[i]}.eth`
     );
   }
 
   const cool_alternativesFormat = alternatives
     .map(
-      (alternative: string, index: number) => `${index + 1}. ${alternative} ✨`,
+      (alternative: string, index: number) => `${index + 1}. ${alternative} ✨`
     )
     .join("\n");
   return cool_alternativesFormat;

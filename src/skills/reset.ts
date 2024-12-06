@@ -3,9 +3,9 @@ import { XMTPContext } from "@xmtp/message-kit";
 
 import type { Skill } from "@xmtp/message-kit";
 
-export const registerSkill: Skill[] = [
+export const reset: Skill[] = [
   {
-    skill: "/reset",
+    skill: "reset",
     examples: ["/reset"],
     handler: handler,
     description: "Reset the conversation.",

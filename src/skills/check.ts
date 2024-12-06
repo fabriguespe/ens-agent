@@ -3,9 +3,9 @@ import { XMTPContext, getUserInfo } from "@xmtp/message-kit";
 import type { Skill } from "@xmtp/message-kit";
 
 // [!region define]
-export const registerSkill: Skill[] = [
+export const check: Skill[] = [
   {
-    skill: "/check [domain]",
+    skill: "check",
     handler: handler,
     examples: ["/check vitalik.eth", "/check fabri.base.eth"],
     description: "Check if a domain is available.",

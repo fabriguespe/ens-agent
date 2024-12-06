@@ -1,11 +1,10 @@
-import { ensUrl } from "../index.js";
 import { XMTPContext, getUserInfo, isOnXMTP } from "@xmtp/message-kit";
 
 import type { Skill } from "@xmtp/message-kit";
 
-export const registerSkill: Skill[] = [
+export const info: Skill[] = [
   {
-    skill: "/info [domain]",
+    skill: "info",
     handler: handler,
     description:
       "Get detailed information about an ENS domain including owner, expiry date, and resolver.",
@@ -47,7 +46,7 @@ export async function handler(context: XMTPContext) {
 
   if (await isOnXMTP(context.client, context.v2client, sender?.address)) {
     await context.send(
-      `Ah, this domains is in XMTP, you can message it directly`,
+      `Ah, this domains is in XMTP, you can message it directly`
     );
     await context.sendConverseDmFrame(domain);
   }

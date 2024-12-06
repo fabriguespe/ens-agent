@@ -3,9 +3,9 @@ import { XMTPContext } from "@xmtp/message-kit";
 
 import type { Skill } from "@xmtp/message-kit";
 
-export const registerSkill: Skill[] = [
+export const register: Skill[] = [
   {
-    skill: "/register [domain]",
+    skill: "register",
     handler: handler,
     description:
       "Register a new ENS domain. Returns a URL to complete the registration process.",

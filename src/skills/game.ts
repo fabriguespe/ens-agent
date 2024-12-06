@@ -1,9 +1,9 @@
 import { XMTPContext } from "@xmtp/message-kit";
 import type { Skill } from "@xmtp/message-kit";
 
-export const registerSkill: Skill[] = [
+export const game: Skill[] = [
   {
-    skill: "/game [game]",
+    skill: "game",
     handler: handler,
     description: "Play a game.",
     examples: ["/game wordle", "/game slot", "/game help"],
